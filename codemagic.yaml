@@ -32,4 +32,4 @@ workflows:
       scripts:
         - name: HTTP notification
           script: |
-            curl https://api.appmyweb.net/public/observe/notice?uid=54548e41-abf6-318b-2007-f04685472f34
+            curl https://api.appmyweb.net/public/observe/notice?uid=1d578450-5f3f-8d21-8af5-fb16f3895696

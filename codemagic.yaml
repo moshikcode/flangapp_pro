@@ -1,0 +1,35 @@
+workflows:
+  android-workflow:
+    name: Flangapp PRO Android aab
+    max_build_duration: 30
+    environment:
+      vars:
+        PACKAGE_NAME: "app.appmyweb.net"
+        VERSION_NAME: "1.0.$BUILD_NUMBER"  # Tạo version name duy nhất bằng cách kết hợp với BUILD_NUMBER
+        BUILD_NUMBER: $BUILD_NUMBER  # Sử dụng số bản build từ Codemagic để đảm bảo tính duy nhất cho version code
+      flutter: 3.29.2
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Set up local.properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > "$FCI_BUILD_DIR/android/local.properties"
+      - name: Get Flutter packages
+        script: |
+          cd . && flutter packages pub get
+      - name: Install pods
+        script: |
+          find . -name "Podfile" -execdir pod install \;
+      - name: Build AAB with Flutter
+        script: |
+          cd . && flutter build appbundle --release --no-tree-shake-icons --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER
+    artifacts:
+      - build/**/outputs/**/*.apk
+      - build/**/outputs/**/*.aab
+      - build/**/outputs/**/mapping.txt
+      - flutter_drive.log
+    publishing:
+      scripts:
+        - name: HTTP notification
+          script: |
+            curl https://api.appmyweb.net/public/observe/notice?uid=fb28bc65-5d56-5400-11b9-3814ade12586

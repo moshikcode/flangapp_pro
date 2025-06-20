@@ -1,0 +1,67 @@
+name: Update from Template Repository
+
+on:
+  workflow_dispatch:
+    inputs:
+      github_token:
+        description: 'GitHub token for authentication'
+        required: true
+        type: string
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Template Repository Info
+        id: get-template
+        run: |
+          RESPONSE=$(curl -s -H "Authorization: token ${{ inputs.github_token }}" \
+                          -H "Accept: application/vnd.github.v3+json" \
+                          https://api.github.com/repos/${{ github.repository }})
+          
+          TEMPLATE_REPO=$(echo "$RESPONSE" | jq -r '.template_repository.full_name')
+          
+          if [[ "$TEMPLATE_REPO" == "null" ]]; then
+            echo "No template repository found."
+            exit 1
+          fi
+          
+          echo "Using template repository: $TEMPLATE_REPO"
+          echo "TEMPLATE_REPO=$TEMPLATE_REPO" >> $GITHUB_ENV
+
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ inputs.github_token }}
+
+      - name: Add template repository as remote
+        run: |
+          git remote add template https://github.com/${{ env.TEMPLATE_REPO }}.git
+          git fetch template
+
+      - name: Check for updates
+        id: check-updates
+        run: |
+          TEMPLATE_COMMIT=$(git rev-parse template/main)
+          CURRENT_COMMIT=$(git rev-parse origin/main)
+
+          if [ "$TEMPLATE_COMMIT" != "$CURRENT_COMMIT" ]; then
+            echo "New updates found!"
+            echo "needs_update=true" >> $GITHUB_ENV
+          else
+            echo "No updates found."
+            echo "needs_update=false" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Git user
+        run: |
+          git config --local user.name "GitHub Actions"
+          git config --local user.email "actions@github.com"
+
+      - name: Merge changes if updates exist
+        if: env.needs_update == 'true'
+        run: |
+          git checkout main
+          git merge --allow-unrelated-histories -X theirs template/main
+          git push origin main

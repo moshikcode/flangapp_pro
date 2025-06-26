@@ -1,35 +1,90 @@
 workflows:
-  android-workflow:
-    name: Flangapp PRO Android aab
+  ios-workflow:
+    name: Flangapp PRO iOS with publication
     max_build_duration: 30
     environment:
       vars:
-        PACKAGE_NAME: "co.balio.app"
-        VERSION_NAME: "1.0.$BUILD_NUMBER"  # Tạo version name duy nhất bằng cách kết hợp với BUILD_NUMBER
-        BUILD_NUMBER: $BUILD_NUMBER  # Sử dụng số bản build từ Codemagic để đảm bảo tính duy nhất cho version code
+        XCODE_WORKSPACE: "Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+        APP_STORE_CONNECT_ISSUER_ID: 7d490f7d-99b5-4d46-b316-fd62024588ac
+        APP_STORE_CONNECT_KEY_IDENTIFIER: 3CUQ98B7JJ
+        APP_STORE_CONNECT_PRIVATE_KEY: |-
+         -----BEGIN PRIVATE KEY-----
+         MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQgSgz53G6dMz9bbDfs
+         jP+es5b4qhCWjWTepZvyaQC9WkOgCgYIKoZIzj0DAQehRANCAARj4BsRUNrVuiaF
+         HHv/TenBz7khjoSCySXVHLCG/1wXYayzHMo2HPqRlvP97hj1mnDxZwdD+6gnLEtn
+         eE7LjnJd
+         -----END PRIVATE KEY-----
+
+        CERTIFICATE_PRIVATE_KEY: |-
+         -----BEGIN RSA PRIVATE KEY-----
+         MIIEpAIBAAKCAQEApZbUGIDsxE4aFAH0z7Lyi6v4jKjCpcOARyA5W8+0xWIWW1BB
+         dNZWhiz/7fAyomfMhJKl8HYwh9uuTh0d5Jn9tRXup8/W2xstO8RoxtPoZ+8xGVzf
+         yrjolgrc9totfeAIeAU6xsg+s2heT8Zl5uj6nqZNZlamyolFnYT4gOeYjDr1NS4m
+         FOhbcUh2gIdasB/F7h7Kl3qVIza99ONs/z7RGToURBMPd7CSdg8Uffx/2WLiybMJ
+         LskU3nV7WU9jZ5SXlLOtniyr8GE2/NUWvvkYjLXdbkkJhiJ90IBwFzLhnCYK3Ae7
+         AWISuaZerVF2k54YmvMPA0unPdC7ovl/YVCaSwIDAQABAoIBAEoODdXVls3mNgB7
+         rX5UA+gWJWbWtJKIv+5PSYe3eRuLVf9JgbSchP6l0mGZujNqo4sowKCtYt/njeku
+         WWeavN3HLMANEgRUf6LKoKdHLxmIXhd/MzDJCG/N9OtLQOwaDP+MKzCqbmwzAXbA
+         /mLKEAdyzYu2tgo/YQxk4vRXXyBbJ3yxzKdMCQ1LK03MebMgPiu4lLYqV/gzM/yC
+         z4DLBDNN9TJnFu8s5LOOUfFzDX3bqPkIjCtk7yR+nysfGY0/+rDUxiXQKb/wDe0k
+         AMXFSPEw0uXWOsrunGFX1b2HwWUvzYIjcBWeoL7yIcFCrPdnSbkMq3Qi7wZdh2+Q
+         +hQgmhECgYEAx2az6CCKiQXNOJz1Au9iu8sdicaWUPd/v33n0Ss1VKwoqs4k2n2j
+         djJTA6ptUPsZc60F7+uKeMmv7NpK4cmK8z5i0266b2+U4spHQLFJGA61hYOQ9sQO
+         jQhzDfZebPEkldbRok1YOPmYFbX8PDYVbthOQ6GSwd1AkedlsEPtmvsCgYEA1Jc1
+         UgeX81P9B33YKTX+VK43J1BX1Xvs5qGVBxyTaRgV6P8s7gwITIFEoKp/w1g53vDZ
+         7jCMORUBVmx7HhcrhMpQHCw4dTtiKw6Qj+EQKB/mN9jkHX3CLOaIiYV8HNOyiBnh
+         tRrRfSbzvVFPhcBCtD9Sy9H0nInnBhCp+/223PECgYEArXRAkW8lM3aRg2q9kzUL
+         7RIN+th9z6bMQJZUflaYyLQNmC9ETa+27s1t+yVYfHZBOKfNH1wEk3fWijGFrA02
+         yst9CjErCl7E49dTzgmp7Lx22NKO2qnHgpVUCFRE5X2K9rDsoMOpN76etlwdM39U
+         e5y70AcP84X0cjcY9RDR8tsCgYBm+oAHpkoCwpJ1CI6nF9KFLobk8lQ5w3f0GB1a
+         foshg1tJrCIVhZqXhJ67vRt6gsg1qDHI4ZdrJzOoq4/P+aVJA79ehkUq9IMPHFUG
+         fR0YcqtQLi4B4yMmIN3Oz+xZAmse5nqhAcaseyvibvq4bXNiYLI4rRFyqpJQK85L
+         lJD54QKBgQDBfj7TBJCKIvZzLYHSp1dypCuLXTiYh30qU0u3N0oG/AUTIdx/Z+V+
+         pEKp3Vd4uFMWYNsoQSyr/U9B/G6ioqPKRwPSJAQrAPzEjtBbeI3SQZZm643iXX6f
+         u/WiGMNIfnHg22wDNrPj/VxukOkzPinMT4nXkQ0PKAu+cG0Z0PjF2w==
+         -----END RSA PRIVATE KEY-----
+         
+
+        BUNDLE_ID: "co.balio.app"
       flutter: 3.29.2
-      xcode: latest
+      xcode: 16.2
       cocoapods: default
     scripts:
-      - name: Set up local.properties
+      - name: Set up keychain to be used for codesigning using Codemagic CLI 'keychain' command
         script: |
-          echo "flutter.sdk=$HOME/programs/flutter" > "$FCI_BUILD_DIR/android/local.properties"
+          keychain initialize
+      - name: Fetch signing files
+        script: |
+          app-store-connect fetch-signing-files $BUNDLE_ID --type IOS_APP_STORE --create --log-api-calls --verbose
+      - name: Use system default keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing settings on Xcode project
+        script: |
+          xcode-project use-profiles
       - name: Get Flutter packages
         script: |
           cd . && flutter packages pub get
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
-      - name: Build AAB with Flutter
+      - name: Flutter build ipa and automatic versioning
         script: |
-          cd . && flutter build appbundle --release --no-tree-shake-icons --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER
+          flutter build ipa --release --no-tree-shake-icons \
+          --build-name=1.0.0 \
+          --build-number=1 \
+          --export-options-plist=/Users/builder/export_options.plist
     artifacts:
-      - build/**/outputs/**/*.apk
-      - build/**/outputs/**/*.aab
-      - build/**/outputs/**/mapping.txt
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
     publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
       scripts:
         - name: HTTP notification
           script: |
-            curl https://api.appmyweb.net/public/observe/notice?uid=c3f463df-9c66-12b1-188b-16391880bc92
+            curl https://api.appmyweb.net/public/observe/notice?uid=403eab54-4f64-1908-4f55-83e0dfe4ad42

@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "pro.flangapp.app"
+        applicationId = "co.balio.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
@@ -34,9 +34,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("sign/key.jks")
-            storePassword = "EMrNEJbNkbPs"
-            keyAlias = "tadapp_android_e"
-            keyPassword = "EMrNEJbNkbPs"
+            storePassword = "nfAaNgFlhjohSfdl"
+            keyAlias = "wffgZIEYNf"
+            keyPassword = "nfAaNgFlhjohSfdl"
         }
     }
 

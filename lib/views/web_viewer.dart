@@ -228,16 +228,49 @@ class _WebViewerState extends State<WebViewer> {
               });
             });
           },
-          shouldOverrideUrlLoading: (controller, navigationAction) async {
-            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-              final shouldPerformDownload =
-                  navigationAction.shouldPerformDownload ?? false;
-              final url = navigationAction.request.url;
-              if (shouldPerformDownload && url != null) {
-                return NavigationActionPolicy.DOWNLOAD;
-              }
-            }
-            var uri = navigationAction.request.url!;
+    shouldOverrideUrlLoading: (controller, navigationAction) async {
+  // טיפול ב-iOS להורדות קבצים
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    final shouldPerformDownload = navigationAction.shouldPerformDownload ?? false;
+    final url = navigationAction.request.url;
+    if (shouldPerformDownload && url != null) {
+      return NavigationActionPolicy.DOWNLOAD;
+    }
+  }
+
+  var uri = navigationAction.request.url!;
+
+  // --- התחלת תוספת OAuth --- //
+  final urlStr = uri.toString();
+  if (urlStr.contains("accounts.google.com") ||
+      urlStr.contains("facebook.com/dialog/oauth") ||
+      urlStr.contains("appleid.apple.com/auth") ||
+      urlStr.contains("oauth")) {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return NavigationActionPolicy.CANCEL;
+    }
+  }
+  // --- סוף תוספת OAuth --- //
+
+  if (![
+    "http",
+    "https",
+    "file",
+    "chrome",
+    "data",
+    "javascript",
+    "about"
+  ].contains(uri.scheme)) {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      return NavigationActionPolicy.CANCEL;
+    }
+  }
+
+  return NavigationActionPolicy.ALLOW;
+},
+
 
             if (![
               "http",

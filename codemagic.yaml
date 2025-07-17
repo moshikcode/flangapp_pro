@@ -1,6 +1,6 @@
 workflows:
   android-workflow:
-    name: Flangapp PRO Android aab
+    name: Flangapp PRO Android apk
     max_build_duration: 30
     environment:
       vars:
@@ -20,9 +20,9 @@ workflows:
       - name: Install pods
         script: |
           find . -name "Podfile" -execdir pod install \;
-      - name: Build AAB with Flutter
+      - name: Build APK with Flutter
         script: |
-          cd . && flutter build appbundle --release --no-tree-shake-icons --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER
+          cd . && flutter build apk --release --no-tree-shake-icons --build-name=$VERSION_NAME --build-number=$BUILD_NUMBER
     artifacts:
       - build/**/outputs/**/*.apk
       - build/**/outputs/**/*.aab
@@ -32,4 +32,4 @@ workflows:
       scripts:
         - name: HTTP notification
           script: |
-            curl https://api.appmyweb.net/public/observe/notice?uid=c9d7f3a6-cdb9-15f8-f00c-22deb39cece0
+            curl https://api.appmyweb.net/public/observe/notice?uid=5377cb98-404e-2f29-c146-7bd63e565c42

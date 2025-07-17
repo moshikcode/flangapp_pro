@@ -229,36 +229,51 @@ class _WebViewerState extends State<WebViewer> {
             });
           },
           shouldOverrideUrlLoading: (controller, navigationAction) async {
-            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
-              final shouldPerformDownload =
-                  navigationAction.shouldPerformDownload ?? false;
-              final url = navigationAction.request.url;
-              if (shouldPerformDownload && url != null) {
-                return NavigationActionPolicy.DOWNLOAD;
-              }
-            }
-            var uri = navigationAction.request.url!;
+  if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+    final shouldPerformDownload =
+        navigationAction.shouldPerformDownload ?? false;
+    final url = navigationAction.request.url;
+    if (shouldPerformDownload && url != null) {
+      return NavigationActionPolicy.DOWNLOAD;
+    }
+  }
 
-            if (![
-              "http",
-              "https",
-              "file",
-              "chrome",
-              "data",
-              "javascript",
-              "about"
-            ].contains(uri.scheme)) {
-              if (await canLaunchUrl(uri)) {
-                // Launch the App
-                await launchUrl(
-                  uri,
-                );
-                // and cancel the request
-                return NavigationActionPolicy.CANCEL;
-              }
-            }
-            return NavigationActionPolicy.ALLOW;
-          },
+  var uri = navigationAction.request.url!;
+
+  // --- תוספת לפתיחת OAuth בדפדפן חיצוני --- //
+  final urlStr = uri.toString();
+  if (urlStr.contains("accounts.google.com") ||
+      urlStr.contains("facebook.com/dialog/oauth") ||
+      urlStr.contains("appleid.apple.com/auth") ||
+      urlStr.contains("oauth")) {
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return NavigationActionPolicy.CANCEL;
+    }
+  }
+  // --- סוף התוספת --- //
+
+  if (![
+    "http",
+    "https",
+    "file",
+    "chrome",
+    "data",
+    "javascript",
+    "about"
+  ].contains(uri.scheme)) {
+    if (await canLaunchUrl(uri)) {
+      // Launch the App
+      await launchUrl(
+        uri,
+      );
+      // and cancel the request
+      return NavigationActionPolicy.CANCEL;
+    }
+  }
+  return NavigationActionPolicy.ALLOW;
+},
+
           onGeolocationPermissionsShowPrompt: (InAppWebViewController controller, String origin) async {
             if (widget.appConfig.gpsEnabled) {
               await Permission.location.request();

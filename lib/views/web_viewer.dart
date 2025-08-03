@@ -239,6 +239,22 @@ class _WebViewerState extends State<WebViewer> {
             }
             var uri = navigationAction.request.url!;
 
+              final urlStr = uri.toString();
+  debugPrint("🌐 URL Loaded: $urlStr");
+
+  // בדיקה אם ה-Login מחזיר טוקן או קוד
+  if (urlStr.contains("token=") || urlStr.contains("code=")) {
+    final params = Uri.parse(urlStr).queryParameters;
+    final token = params['token'] ?? params['code'];
+    debugPrint("✅ TOKEN FOUND: $token");
+
+    // כאן תוכל לשמור את הטוקן ולהמשיך לזרימה פנימית
+    // לדוגמה: לשמור ב-SharedPreferences או לקרוא ל-API שלך
+
+    return NavigationActionPolicy.CANCEL;
+  }
+
+
             if (![
               "http",
               "https",

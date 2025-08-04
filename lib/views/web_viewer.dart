@@ -229,7 +229,6 @@ class _WebViewerState extends State<WebViewer> {
             });
           },
           shouldOverrideUrlLoading: (controller, navigationAction) async {
-    var uri = navigationAction.request.url!;
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
     final shouldPerformDownload =
         navigationAction.shouldPerformDownload ?? false;

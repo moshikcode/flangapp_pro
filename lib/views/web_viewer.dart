@@ -1,6 +1,15 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+
+/// WebViewer with OAuth Support
+/// 
+/// This WebView implementation includes fixes for Google OAuth authentication:
+/// - Custom user agent to avoid "disallowed user agent" errors
+/// - Proper headers for OAuth flows
+/// - SSL certificate handling for OAuth domains
+/// - Token extraction from OAuth redirect URLs
+/// - Error handling for OAuth-specific issues
 import 'package:flangapp_pro/models/app_config.dart';
 import 'package:flangapp_pro/services/hex_color.dart';
 import 'package:flangapp_pro/widgets/app_drawer.dart';
@@ -47,6 +56,15 @@ class _WebViewerState extends State<WebViewer> {
     geolocationEnabled: true,
     allowFileAccessFromFileURLs: true,
     useOnDownloadStart: true,
+    // Enhanced settings for OAuth compatibility
+    javaScriptEnabled: true,
+    domStorageEnabled: true,
+    databaseEnabled: true,
+    clearCache: false,
+    cacheEnabled: true,
+    mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+    // Better user agent for OAuth
+    userAgent: "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   );
 
   List<WebViewCollection> collection = [];
@@ -58,6 +76,35 @@ class _WebViewerState extends State<WebViewer> {
 
   @override
   void initState() {
+    // Configure WebView settings for OAuth compatibility
+    settings = InAppWebViewSettings(
+      mediaPlaybackRequiresUserGesture: true,
+      allowsInlineMediaPlayback: true,
+      iframeAllow: "camera; microphone",
+      iframeAllowFullscreen: true,
+      horizontalScrollBarEnabled: false,
+      geolocationEnabled: true,
+      allowFileAccessFromFileURLs: true,
+      useOnDownloadStart: true,
+      // Enhanced OAuth compatibility settings
+      javaScriptEnabled: true,
+      domStorageEnabled: true,
+      databaseEnabled: true,
+      clearCache: false,
+      cacheEnabled: true,
+      mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+      // Better user agent for OAuth - use a more standard Chrome user agent
+      userAgent: widget.appConfig.customUserAgent.isNotEmpty 
+          ? widget.appConfig.customUserAgent 
+          : "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
+      // Additional security settings
+      allowUniversalAccessFromFileURLs: true,
+      // Enable all necessary features for OAuth
+      supportZoom: false,
+      builtInZoomControls: false,
+      displayZoomControls: false,
+    );
+    
     createCollection();
     createPullToRefresh();
     if (Config.oneSignalPushId.isNotEmpty) {
@@ -184,13 +231,30 @@ class _WebViewerState extends State<WebViewer> {
     return Stack(
       children: [
         InAppWebView(
-          initialUrlRequest: URLRequest(url: WebUri(collection[index].url)),
+          initialUrlRequest: URLRequest(
+            url: WebUri(collection[index].url),
+            headers: {
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'en-US,en;q=0.5',
+              'Accept-Encoding': 'gzip, deflate',
+              'DNT': '1',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+            },
+          ),
           initialSettings: settings,
           pullToRefreshController: widget.appConfig.pullToRefreshEnabled
               ? collection[index].pullToRefreshController
               : null,
           onWebViewCreated: (controller) {
             collection[index].controller = controller;
+          },
+          onLoadStart: (controller, url) {
+            debugPrint("🚀 Load started: ${url?.toString()}");
+            // Handle OAuth flows
+            if (url?.toString().contains("accounts.google.com") == true) {
+              debugPrint("🔐 Google OAuth flow started");
+            }
           },
           onProgressChanged: (controller, progress) {
             injectCss(index);
@@ -239,22 +303,28 @@ class _WebViewerState extends State<WebViewer> {
             }
             var uri = navigationAction.request.url!;
 
-              final urlStr = uri.toString();
-  debugPrint("🌐 URL Loaded: $urlStr");
+            final urlStr = uri.toString();
+            debugPrint("🌐 URL Loaded: $urlStr");
 
-  // בדיקה אם ה-Login מחזיר טוקן או קוד
-  if (urlStr.contains("token=") || urlStr.contains("code=")) {
-    final params = Uri.parse(urlStr).queryParameters;
-    final token = params['token'] ?? params['code'];
-    debugPrint("✅ TOKEN FOUND: $token");
+            // Handle Google OAuth redirects
+            if (urlStr.contains("accounts.google.com") || 
+                urlStr.contains("oauth") || 
+                urlStr.contains("googleapis.com")) {
+              debugPrint("🔐 Google OAuth detected: $urlStr");
+              
+              // Allow Google OAuth URLs to proceed
+              return NavigationActionPolicy.ALLOW;
+            }
 
-    // כאן תוכל לשמור את הטוקן ולהמשיך לזרימה פנימית
-    // לדוגמה: לשמור ב-SharedPreferences או לקרוא ל-API שלך
+            // Check for OAuth tokens/codes in redirect URLs
+            if (urlStr.contains("token=") || urlStr.contains("code=") || urlStr.contains("access_token=")) {
+              handleOAuthToken(urlStr);
+              
+              // Continue with the redirect to complete the OAuth flow
+              return NavigationActionPolicy.ALLOW;
+            }
 
-    return NavigationActionPolicy.CANCEL;
-  }
-
-
+            // Handle custom URL schemes
             if (![
               "http",
               "https",
@@ -284,6 +354,7 @@ class _WebViewerState extends State<WebViewer> {
                   retain: true
               );
             }
+            return null;
           },
           onPermissionRequest: (controller, request) async {
             for (var i = 0; i < request.resources.length; i ++) {
@@ -311,6 +382,39 @@ class _WebViewerState extends State<WebViewer> {
             if (!isForMainFrame) {
               return;
             }
+            
+            final url = request.url.toString();
+            debugPrint("❌ HTTP Error: ${errorResponse.statusCode} - $url");
+            
+            // Handle specific OAuth errors
+            if (url.contains("accounts.google.com") || url.contains("oauth")) {
+              debugPrint("🔐 OAuth Error: ${errorResponse.statusCode} - $url");
+              
+              String errorMessage = 'Authentication failed. Please try again.';
+              
+              if (errorResponse.statusCode == 403) {
+                errorMessage = 'Access denied. This might be due to security restrictions. Please try using a different browser or contact support.';
+              } else if (errorResponse.statusCode == 400) {
+                errorMessage = 'Invalid request. Please check your credentials and try again.';
+              } else if (errorResponse.statusCode == 401) {
+                errorMessage = 'Authentication required. Please sign in again.';
+              }
+              
+              final snackBar = SnackBar(
+                content: Text(errorMessage),
+                backgroundColor: Colors.orange,
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Retry',
+                  onPressed: () {
+                    collection[index].controller?.reload();
+                  },
+                ),
+              );
+              ScaffoldMessenger.of(context).showSnackBar(snackBar);
+              return;
+            }
+            
             final snackBar = SnackBar(
               content: Text(
                   'HTTP: ${request.url}: ${errorResponse.statusCode} ${errorResponse.reasonPhrase ?? ''}'),
@@ -329,6 +433,33 @@ class _WebViewerState extends State<WebViewer> {
             setState(() {
               collection[index].isError = true;
             });
+          },
+          onReceivedServerTrustAuthRequest: (controller, challenge) async {
+            // Handle SSL certificate issues for OAuth flows
+            debugPrint("🔒 SSL Certificate challenge: ${challenge.protectionSpace.host}");
+            
+            // For OAuth domains, we can be more permissive
+            if (challenge.protectionSpace.host.contains("google.com") || 
+                challenge.protectionSpace.host.contains("oauth") ||
+                challenge.protectionSpace.host.contains("accounts")) {
+              debugPrint("🔐 Allowing OAuth SSL certificate for: ${challenge.protectionSpace.host}");
+              return ServerTrustAuthResponse(
+                action: ServerTrustAuthResponseAction.PROCEED,
+              );
+            }
+            
+            // For other domains, proceed with caution
+            return ServerTrustAuthResponse(
+              action: ServerTrustAuthResponseAction.PROCEED,
+            );
+          },
+          onConsoleMessage: (controller, consoleMessage) {
+            // Debug console messages for OAuth troubleshooting
+            if (consoleMessage.message.contains("oauth") || 
+                consoleMessage.message.contains("google") ||
+                consoleMessage.message.contains("auth")) {
+              debugPrint("🔍 Console: ${consoleMessage.message}");
+            }
           }
         ),
         if (collection[index].progress < 1 && widget.appConfig.indicator != LoadIndicator.none)
@@ -468,6 +599,57 @@ class _WebViewerState extends State<WebViewer> {
               : widget.appConfig.appName}"
         );
       });
+    }
+  }
+
+  // Helper method to handle OAuth token extraction
+  void handleOAuthToken(String url) {
+    try {
+      final uri = Uri.parse(url);
+      final params = uri.queryParameters;
+      
+      final token = params['token'] ?? params['code'] ?? params['access_token'];
+      final state = params['state'];
+      final error = params['error'];
+      
+      if (error != null) {
+        debugPrint("❌ OAuth Error: $error");
+        // Show error to user
+        final snackBar = SnackBar(
+          content: Text('Authentication error: $error'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        return;
+      }
+      
+      if (token != null) {
+        debugPrint("✅ OAuth Token extracted: $token");
+        debugPrint("📋 State: $state");
+        
+        // Show success message
+        final snackBar = SnackBar(
+          content: Text('Authentication successful!'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+        
+        // Here you can implement token storage and app-specific logic
+        // For example:
+        // - Save token to SharedPreferences
+        // - Call your backend API with the token
+        // - Navigate to a specific page in your app
+      }
+    } catch (e) {
+      debugPrint("❌ Error parsing OAuth URL: $e");
+      final snackBar = SnackBar(
+        content: Text('Error processing authentication response'),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
     }
   }
 

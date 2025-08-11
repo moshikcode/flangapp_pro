@@ -114,7 +114,7 @@ class AppConfig {
       iconColor: json['icon_color'],
       isDark: json['is_dark'],
       pullToRefreshEnabled: json['pull_to_refresh'],
-      customUserAgent: '',
+      customUserAgent: json['user_agent'],
       email: json['email'],
       template: _convertToTemplate(json['template']),
       indicator: _convertToIndicator(json['indicator']),

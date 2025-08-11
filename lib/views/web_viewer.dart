@@ -47,7 +47,29 @@ class _WebViewerState extends State<WebViewer> {
     geolocationEnabled: true,
     allowFileAccessFromFileURLs: true,
     useOnDownloadStart: true,
+    // Enhanced settings for OAuth compatibility
+    javaScriptEnabled: true,
+    domStorageEnabled: true,
+    databaseEnabled: true,
+    clearCache: false,
+    cacheEnabled: true,
+    mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+    // Default user agent - will be overridden in initState
+    userAgent: "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
   );
+
+  String _getPlatformUserAgent() {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      // iOS Safari user agent for better compatibility
+      return "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      // Android Chrome user agent
+      return "Mozilla/5.0 (Linux; Android 10; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+    } else {
+      // Default Chrome user agent for other platforms
+      return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    }
+  }
 
   List<WebViewCollection> collection = [];
   int activePage = 0;
@@ -58,6 +80,34 @@ class _WebViewerState extends State<WebViewer> {
 
   @override
   void initState() {
+    // Configure WebView settings for OAuth compatibility
+    settings = InAppWebViewSettings(
+      mediaPlaybackRequiresUserGesture: true,
+      allowsInlineMediaPlayback: true,
+      iframeAllow: "camera; microphone",
+      iframeAllowFullscreen: true,
+      horizontalScrollBarEnabled: false,
+      geolocationEnabled: true,
+      allowFileAccessFromFileURLs: true,
+      useOnDownloadStart: true,
+      // Enhanced OAuth compatibility settings
+      javaScriptEnabled: true,
+      domStorageEnabled: true,
+      databaseEnabled: true,
+      clearCache: false,
+      cacheEnabled: true,
+      mixedContentMode: MixedContentMode.MIXED_CONTENT_ALWAYS_ALLOW,
+      // Platform-aware user agent for OAuth compatibility
+      userAgent: widget.appConfig.customUserAgent.isNotEmpty 
+          ? widget.appConfig.customUserAgent 
+          : _getPlatformUserAgent(),
+      // Additional security settings
+      allowUniversalAccessFromFileURLs: true,
+      // Enable all necessary features for OAuth
+      supportZoom: false,
+      builtInZoomControls: false,
+      displayZoomControls: false,
+    );
     createCollection();
     createPullToRefresh();
     if (Config.oneSignalPushId.isNotEmpty) {
